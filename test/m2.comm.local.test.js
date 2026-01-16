@@ -1,4 +1,6 @@
 require('../distribution.js')({ip: '127.0.0.1', port: 1246});
+require('./helpers/sync-guard');
+const http = require('node:http');
 const distribution = globalThis.distribution;
 const local = distribution.local;
 const id = distribution.util.id;
@@ -72,11 +74,50 @@ test('(10 pts) comm: status.get() with invalid service', (done) => {
   });
 });
 
-test('(0 pts) comm: send rejects non-array message', (done) => {
-  const node = distribution.node.config;
-  const remote = {node: node, service: 'status', method: 'get'};
+test('(0 pts) comm: send rejects missing node', (done) => {
+  const remote = {service: 'status', method: 'get'};
 
-  local.comm.send('not-an-array', remote, (e, v) => { // @ts-ignore for test
+  local.comm.send([], remote, (e, v) => {
+    try {
+      expect(e).toBeInstanceOf(Error);
+      expect(v).toBeFalsy();
+      done();
+    } catch (error) {
+      done(error);
+    }
+  });
+});
+
+test('(0 pts) comm: send rejects node with missing IP', (done) => {
+  const remote = {
+    node: {
+      port: 1000,
+    },
+    service: 'status',
+    method: 'get',
+  };
+
+  local.comm.send([], remote, (e, v) => {
+    try {
+      expect(e).toBeInstanceOf(Error);
+      expect(v).toBeFalsy();
+      done();
+    } catch (error) {
+      done(error);
+    }
+  });
+});
+
+test('(0 pts) comm: send rejects node with missing port', (done) => {
+  const remote = {
+    node: {
+      ip: '0.0.0.0',
+    },
+    service: 'status',
+    method: 'get',
+  };
+
+  local.comm.send([], remote, (e, v) => {
     try {
       expect(e).toBeInstanceOf(Error);
       expect(v).toBeFalsy();
@@ -111,20 +152,6 @@ test('(0 pts) comm: send requires service and method', (done) => {
   });
 });
 
-test('(0 pts) comm: send rejects missing node', (done) => {
-  const remote = {service: 'status', method: 'get', node: null};
-
-  local.comm.send([], remote, (e, v) => {
-    try {
-      expect(e).toBeInstanceOf(Error);
-      expect(v).toBeFalsy();
-      done();
-    } catch (error) {
-      done(error);
-    }
-  });
-});
-
 test('(0 pts) comm: send rejects empty service string', (done) => {
   const node = distribution.node.config;
   const remote = {node: node, service: '', method: 'get'};
@@ -145,6 +172,21 @@ test('(0 pts) comm: send rejects empty method string', (done) => {
   const remote = {node: node, service: 'status', method: ''};
 
   local.comm.send([], remote, (e, v) => {
+    try {
+      expect(e).toBeInstanceOf(Error);
+      expect(v).toBeFalsy();
+      done();
+    } catch (error) {
+      done(error);
+    }
+  });
+});
+
+test('(0 pts) comm: send rejects non-array message', (done) => {
+  const node = distribution.node.config;
+  const remote = {node: node, service: 'status', method: 'get'};
+
+  local.comm.send('not-an-array', remote, (e, v) => { // @ts-ignore for test
     try {
       expect(e).toBeInstanceOf(Error);
       expect(v).toBeFalsy();
@@ -198,6 +240,138 @@ test('(0 pts) comm: send with null message returns error from service', (done) =
       done(error);
     }
   });
+});
+
+test('(0 pts) comm: send with invalid remote address returns error from service', (done) => {
+  const remote = {
+    node: {
+      ip: 'invalid',
+      port: 1000,
+    },
+    service: 'status',
+    method: 'get',
+  };
+
+  local.comm.send([], remote, (e, v) => {
+    try {
+      expect(e).toBeInstanceOf(Error);
+      expect(v).toBeFalsy();
+      done();
+    } catch (error) {
+      done(error);
+    }
+  });
+});
+
+test('(0 pts) node responds with serialized error on non-PUT', (done) => {
+  const node = distribution.node.config;
+  const options = {
+    hostname: node.ip,
+    port: node.port,
+    path: '/local/status/get',
+    method: 'GET',
+  };
+
+  const request = http.request(options, (response) => {
+    let data = '';
+    response.on('data', (chunk) => {
+      data += chunk;
+    });
+    response.on('end', () => {
+      try {
+        const error = distribution.util.deserialize(data);
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toMatch(/Method not allowed/i);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+  });
+
+  request.on('error', (err) => {
+    done(err);
+  });
+
+  request.end();
+});
+
+test('(0 pts) node responds with [err, value] for success', (done) => {
+  const node = distribution.node.config;
+  const options = {
+    hostname: node.ip,
+    port: node.port,
+    path: '/local/status/get',
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const request = http.request(options, (response) => {
+    let data = '';
+    response.on('data', (chunk) => {
+      data += chunk;
+    });
+    response.on('end', () => {
+      try {
+        const decoded = distribution.util.deserialize(data);
+        expect(Array.isArray(decoded)).toBe(true);
+        expect(decoded.length).toBe(2);
+        expect(decoded[0]).toBeFalsy();
+        expect(decoded[1]).toEqual(id.getNID(node));
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+  });
+
+  request.on('error', (err) => {
+    done(err);
+  });
+
+  request.write(distribution.util.serialize(['nid']));
+  request.end();
+});
+
+test('(0 pts) node responds with [err, null] for missing method', (done) => {
+  const node = distribution.node.config;
+  const options = {
+    hostname: node.ip,
+    port: node.port,
+    path: '/local/status/does-not-exist',
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const request = http.request(options, (response) => {
+    let data = '';
+    response.on('data', (chunk) => {
+      data += chunk;
+    });
+    response.on('end', () => {
+      try {
+        const decoded = distribution.util.deserialize(data);
+        expect(Array.isArray(decoded)).toBe(true);
+        expect(decoded.length).toBe(2);
+        expect(decoded[0]).toBeInstanceOf(Error);
+        expect(decoded[1]).toBeNull();
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+  });
+
+  request.on('error', (err) => {
+    done(err);
+  });
+
+  request.write(distribution.util.serialize([]));
+  request.end();
 });
 
 /* Test infrastructure */

@@ -1,4 +1,5 @@
 require('../distribution.js')();
+require('./helpers/sync-guard');
 const distribution = globalThis.distribution;
 const local = distribution.local;
 

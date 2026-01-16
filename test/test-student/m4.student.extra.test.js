@@ -6,6 +6,7 @@
 */
 
 const distribution = require('../../distribution.js')();
+require('../helpers/sync-guard');
 
 test('(15 pts) detect the need to reconfigure', (done) => {
     done(new Error('Not implemented'));

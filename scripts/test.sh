@@ -29,7 +29,27 @@ By default:
 EOF
 }
 
+check_stale_versions() {
+    local stencil_pkg="$top/package.json"
+    local lib_pkg="$top/node_modules/@brown-ds/distribution/package.json"
+
+    if [ ! -f "$stencil_pkg" ] || [ ! -f "$lib_pkg" ]; then
+        return 0
+    fi
+
+    local stencil_version
+    local lib_version
+    stencil_version=$(jq -r '.version' "$stencil_pkg")
+    lib_version=$(jq -r '.version' "$lib_pkg")
+
+    if [ -n "$stencil_version" ] && [ -n "$lib_version" ] && [ "$stencil_version" != "$lib_version" ]; then
+        echo "[test] WARNING: Stencil version ($stencil_version) does not match installed library version ($lib_version)."
+        echo "[test]          Reinstall dependencies or update the stencil to keep versions aligned."
+    fi
+}
+
 top=$(git rev-parse --show-toplevel)
+check_stale_versions
 # Check for leftover ports from previous test runs
 all_ports=$(grep -Rho 'port: [0-9]\+' "$top/test" | cut -d' ' -f2 | sort -n  | uniq)
 for port in $all_ports; do
@@ -74,6 +94,11 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
+            if [[ "$1" == -* ]]; then
+                echo "Unknown option: $1" >&2
+                show_usage >&2
+                exit 1
+            fi
             PATTERN="$1"
             shift
             ;;
@@ -88,17 +113,19 @@ fi
 JEST_COMMAND="npx jest --maxWorkers=1 $COVERAGE_FLAGS"
 JEST_COMMAND_FLAGS=""
 
-# Add test matching logic
-if $RUN_SCENARIOS; then
-    JEST_COMMAND_FLAGS+=" --testMatch \"**/*.scenario.js\""
-fi
+# Add test matching logic (skip defaults when a pattern is provided)
+if [ -z "$PATTERN" ]; then
+    if $RUN_SCENARIOS; then
+        JEST_COMMAND_FLAGS+=" --testMatch \"**/*.scenario.js\""
+    fi
 
-if $RUN_EXTRA_CREDIT; then
-    JEST_COMMAND_FLAGS+=" --testMatch \"**/*.extra.test.js\""
-fi
+    if $RUN_EXTRA_CREDIT; then
+        JEST_COMMAND_FLAGS+=" --testMatch \"**/*.extra.test.js\""
+    fi
 
-if $RUN_NORMAL_TESTS || (! $RUN_SCENARIOS && ! $RUN_EXTRA_CREDIT && ! $RUN_NORMAL_TESTS); then
-    JEST_COMMAND_FLAGS+=" --testMatch \"**/*.test.js\""
+    if $RUN_NORMAL_TESTS || (! $RUN_SCENARIOS && ! $RUN_EXTRA_CREDIT && ! $RUN_NORMAL_TESTS); then
+        JEST_COMMAND_FLAGS+=" --testMatch \"**/*.test.js\""
+    fi
 fi
 
 # Exclude "non-distribution" tests by default unless -nd is specified

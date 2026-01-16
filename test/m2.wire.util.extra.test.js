@@ -1,4 +1,5 @@
 require('../distribution.js')();
+require('./helpers/sync-guard');
 const distribution = globalThis.distribution;
 
 test('(25 pts) rpc', (done) => {

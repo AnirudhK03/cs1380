@@ -26,10 +26,6 @@ function bootstrap(config) {
     distribution.node.config = config;
   }
 
-  for (const [key, service] of Object.entries(distribution.local)) {
-    distribution.local.routes.put(service, key, () => {});
-  }
-
   const {setup} = require('./distribution/all/all.js');
   distribution.all = setup({gid: 'all'});
 
@@ -38,10 +34,19 @@ function bootstrap(config) {
   // For M3, when missing RPC, its path through routes, and status.{spawn, stop}
   /* __start_M3_solution__
   distribution.util.wire.createRPC = distributionLib.util.wire.createRPC;
-  distribution.local.routes.get = distributionLib.local.routes.get;
+  distribution.local.routes = distributionLib.local.routes;
   distribution.local.status.spawn = distributionLib.local.status.spawn;
   distribution.local.status.stop = distributionLib.local.status.stop;
+  distribution.local.comm = distributionLib.local.comm;
+  distribution.node.start = distributionLib.node.start;
+  distribution.node.util.serialize = distributionLib.node.util.serialize;
+  distribution.node.util.deserialize = distributionLib.node.util.deserialize;
   __end_M3_solution__ */
+
+  for (const [key, service] of Object.entries(distribution.local)) {
+    distribution.local.routes.put(service, key, () => {});
+  }
+
   return distribution;
 }
 

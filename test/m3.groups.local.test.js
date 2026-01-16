@@ -1,4 +1,5 @@
 require('../distribution.js')();
+require('./helpers/sync-guard');
 const distribution = globalThis.distribution;
 const id = distribution.util.id;
 const local = distribution.local;
@@ -29,6 +30,21 @@ test('(1 pts) local.groups.del(random)', (done) => {
   });
 });
 
+test('(0 pts) local.groups.get(all) includes local node', (done) => {
+  const localNode = distribution.node.config;
+  const localSid = id.getSID(localNode);
+
+  distribution.local.groups.get('all', (e, v) => {
+    try {
+      expect(e).toBeFalsy();
+      expect(v[localSid]).toEqual(localNode);
+      done();
+    } catch (error) {
+      done(error);
+    }
+  });
+});
+
 test('(1 pts) local.groups.put(browncs)', (done) => {
   const g = {
     '507aa': {ip: '127.0.0.1', port: 8080},
@@ -46,6 +62,24 @@ test('(1 pts) local.groups.put(browncs)', (done) => {
   });
 });
 
+test('(0 pts) local.groups.add returns updated group', (done) => {
+  const g = {};
+  const node = {ip: '127.0.0.1', port: 8099};
+  const sid = id.getSID(node);
+
+  distribution.local.groups.put('addret', g, (e, v) => {
+    distribution.local.groups.add('addret', node, (e, v) => {
+      try {
+        expect(e).toBeFalsy();
+        expect(v[sid]).toEqual(node);
+        done();
+      } catch (error) {
+        done(error);
+      }
+    });
+  });
+});
+
 test('(2 pts) local.groups.put/get(browncs)', (done) => {
   const g = {
     '507aa': {ip: '127.0.0.1', port: 8080},
@@ -57,6 +91,24 @@ test('(2 pts) local.groups.put/get(browncs)', (done) => {
       try {
         expect(e).toBeFalsy();
         expect(v).toEqual(g);
+        done();
+      } catch (error) {
+        done(error);
+      }
+    });
+  });
+});
+
+test('(0 pts) local.groups.del removes group from distribution', (done) => {
+  const g = {
+    '507aa': {ip: '127.0.0.1', port: 8080},
+  };
+
+  distribution.local.groups.put('tempdel', g, (e, v) => {
+    distribution.local.groups.del('tempdel', (e, v) => {
+      try {
+        expect(e).toBeFalsy();
+        expect(globalThis.distribution.tempdel).toBeUndefined();
         done();
       } catch (error) {
         done(error);

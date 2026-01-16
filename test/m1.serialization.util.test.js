@@ -1,4 +1,5 @@
 require('../distribution.js')();
+require('./helpers/sync-guard');
 const distribution = globalThis.distribution;
 const util = distribution.util;
 
@@ -242,6 +243,13 @@ test('(4 pts) serialize and deserialize object with function', () => {
   const serialized = util.serialize(original);
   const deserialized = util.deserialize(serialized);
   expect(typeof deserialized.f).toEqual('function');
+});
+
+test('(0 pts) serialize config', () => {
+  const config = {ip: '127.0.0.1', port: 1380};
+  const serialized = util.serialize(config);
+  const deserialized = util.deserialize(serialized);
+  expect(deserialized).toEqual(config);
 });
 
 test('(0 pts) serialize and deserialize preserves cyclic references', () => {

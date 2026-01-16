@@ -2,6 +2,7 @@
 const serialization = require('./serialization.js');
 const id = require('./id.js');
 const wire = require('./wire.js');
+const log = require('./log.js');
 
 /* Helper function that fills in any missing arguments with undefined */
 /**
@@ -26,4 +27,5 @@ module.exports = {
   deserialize: serialization.deserialize,
   id: id,
   wire: wire,
+  log: log,
 };

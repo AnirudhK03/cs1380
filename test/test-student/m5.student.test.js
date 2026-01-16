@@ -7,6 +7,7 @@
 */
 
 const distribution = require('../../distribution.js')();
+require('../helpers/sync-guard');
 
 test('(1 pts) student test', (done) => {
   // Fill out this test case...

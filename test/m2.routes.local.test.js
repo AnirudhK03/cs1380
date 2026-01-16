@@ -1,5 +1,6 @@
 const config = {ip: '127.0.0.1', port: 2345};
 require('../distribution.js')(config);
+require('./helpers/sync-guard');
 const distribution = globalThis.distribution;
 const local = distribution.local;
 const routes = distribution.local.routes;
@@ -112,6 +113,23 @@ test('(0 pts) local.routes.rem removes service', (done) => {
           done(error);
         }
       });
+    });
+  });
+});
+
+test('(0 pts) local.routes.rem returns removed service', (done) => {
+  const tempService = {};
+  tempService.hello = () => 'world';
+
+  routes.put(tempService, 'temp-return', (e, v) => {
+    routes.rem('temp-return', (e, v) => {
+      try {
+        expect(e).toBeFalsy();
+        expect(v).toBe(tempService);
+        done();
+      } catch (error) {
+        done(error);
+      }
     });
   });
 });

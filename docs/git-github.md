@@ -8,15 +8,18 @@ git clone https://github.com/brown-cs1380/stencil.git
 cd stencil
 ```
 
-Add the class project as an upstream (optional if you want updates):
-```bash
-git remote add upstream https://github.com/brown-cs1380/project.git
-```
-
 Pull updates to the stencil:
 ```bash
-git fetch upstream
-git merge upstream/main
+git fetch origin
+git merge origin/main
+```
+
+Pull updates while having some in-progress work:
+```bash
+git stash
+git fetch origin
+git merge origin/main
+git stash pop
 ```
 
 ### 2) Work in small, atomic commits
@@ -37,10 +40,10 @@ git diff
 git diff --staged
 ```
 
-### 4) Update from upstream safely
+### 4) Update from origin safely
 ```bash
-git fetch upstream
-git merge upstream/main
+git fetch origin
+git merge origin/main
 ```
 
 If you hit conflicts, fix them and then:
@@ -52,9 +55,4 @@ git commit
 ### 5) Push your work
 ```bash
 git push origin main
-```
-
-If your default branch is `master`:
-```bash
-git push origin master
 ```

@@ -1,4 +1,5 @@
 require('../distribution.js')({ip: '127.0.0.1', port: 1246});
+require('./helpers/sync-guard');
 const distribution = globalThis.distribution;
 const local = distribution.local;
 const id = distribution.util.id;

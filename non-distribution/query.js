@@ -27,10 +27,43 @@ For example, `execSync(`echo "${input}" | ./c/process.sh`, {encoding: 'utf-8'});
 
 const fs = require('fs');
 const {execSync} = require('child_process');
-const path = require('path');
+// const path = require('path');
 
 
 function query(indexFile, args) {
+  const raw = args.join(' ');
+
+  const processed = execSync(`./c/process.sh | ./c/stem.js`, {
+    encoding: 'utf-8',
+    input: raw + '\n',
+  });
+
+
+  const pattern = processed
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+  // If everything got removed (e.g., only stopwords), print nothing.
+  if (pattern.length === 0) return;
+
+  // 3) Read global index
+  let data = '';
+  try {
+    data = fs.readFileSync(indexFile, 'utf-8');
+  } catch (e) {
+    // "error gracefully" vibe — if the index doesn't exist yet, no results.
+    return;
+  }
+
+  // 4) Print matching lines (substring match = grep "pattern")
+  const lines = data.split('\n');
+  for (const line of lines) {
+    if (line.includes(pattern)) {
+      console.log(line);
+    }
+  }
 }
 
 const args = process.argv.slice(2); // Get command-line arguments

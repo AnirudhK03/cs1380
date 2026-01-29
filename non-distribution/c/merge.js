@@ -94,7 +94,6 @@ const printMerged = (err, data) => {
   // where keys are terms and values are url->freq maps (one entry per url).
   // Use the .trim() method to remove leading and trailing whitespace from a string.
   for (const line of globalIndexLines) {
-
     const parts = line.split(' | ');
     const term = parts[0].trim();
     const grouped = {};
@@ -118,7 +117,7 @@ const printMerged = (err, data) => {
 
   for (const term in local) {
     if (global[term]) {
-      for (const url in local[term]){
+      for (const url in local[term]) {
         if (global[term][url]) {
           global[term][url] += local[term][url];
         } else {

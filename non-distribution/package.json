@@ -23,25 +23,25 @@
     "jest": "^29.7.0"
   },
   "ec2": {
-    "ip": "0.0.0.0",
+    "ip": "3.22.194.199",
     "port": 8080
   },
   "report": [
     {
       "milestone": "M0",
       "hours": 12,
-      "loc": 999,
+      "loc": 469,
       "dev": {
         "cpu-no": 999,
         "mem-gb": 999,
         "ssd-gb": 999
       },
       "throughput": {
-        "dev": [],
+        "dev": ["~0.5-1 document/sec (end to end M0 test run)"],
         "aws": [],
         "gs": []
       },
-      "dloc": -99
+      "dloc": 4000
     }
   ]
 }

@@ -28,19 +28,19 @@
   "report": [
     {
       "milestone": "M1",
-      "hours": 999,
-      "loc": 999,
+      "hours": 8,
+      "loc": 219,
       "dev": {
         "cpu-no": 999,
         "mem-gb": 999,
         "ssd-gb": 999
       },
       "throughput": {
-        "dev": [],
+        "dev": ["~80,000 ops/sec"],
         "aws": []
       },
       "latency": {
-        "dev": [],
+        "dev": ["0.0125 ms"],
         "aws": []
       },
       "dloc": -99

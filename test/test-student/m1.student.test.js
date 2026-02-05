@@ -110,10 +110,10 @@ test('(1 pts) student test', () => {
   }
 
   // print results at the end
-  console.log("--- Latency Results (local) ---");
-  console.log("T2 (base types) avg:", avg(t2Times).toFixed(4), "ms");
-  console.log("T3 (functions) avg:", avg(t3Times).toFixed(4), "ms");
-  console.log("T4 (complex obj) avg:", avg(t4Times).toFixed(4), "ms");
+  // console.log("--- Latency Results (local) ---");
+  // console.log("T2 (base types) avg:", avg(t2Times).toFixed(4), "ms");
+  // console.log("T3 (functions) avg:", avg(t3Times).toFixed(4), "ms");
+  // console.log("T4 (complex obj) avg:", avg(t4Times).toFixed(4), "ms");
 
   // test passes if we got here
   expect(t2Times.length).toBe(iterations);

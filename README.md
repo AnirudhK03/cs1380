@@ -125,4 +125,11 @@ distribution.node.start(() => {
 
 # Results and Reflections
 
-> ...
+# M1: Serialization / Deserialization
+## Summary
+> Summarize your implementation, including key challenges you encountered. Remember to update the `report` section of the `package.json` file with the total number of hours it took you to complete each task of M1 (`hours`) and the lines of code per task.
+My implementation comprises 2 software components, totaling 219 lines of code. Key challenges included test cases for latency, intial design for serialization/deserialization, and lastly error handling. The first challenge was the initial design for the serilization and deserilization was difficult to garsp, for exmaple I could have just coped off how it was structured in the library {type: type, value: val}. However, since I built my implemetation around using the JSON.stringfy I chose that instead of adding the type for every primivitive and basic thing that JSON can already do, we only need to add the type for the things JSON cant do, like Date objects and (simplier) NaN. This way the string becomes {"__type":"nan"}. This was simple and we didnt need to add extra deserilization steps for the primivitives (I first wrote out what each string looked like then wrote the code for how it is serilized). Secondly, the next problem was actaully understanding hwo to wrote the latency calculation code, but this was ismple after writing once you could just copy and paste it. Error handling and objects were pain, since I had to rewrite how deserilized (mainly JSON.parse) worked. It was weird because we coudlnt just do the reverse of serialize one to one because when yo run JSON.parse it doesn't have info about its parents node (which conatin the iso value) so I wrote another function that lest JSON.parse completely finish then we go back in and revist how the __type shoudl be handled. 
+## Correctness & Performance Characterization
+> Describe how you characterized the correctness and performance of your implementation
+*Correctness*: I wrote 5 tests; these tests take 1.8secs to execute. This includes objects with literally everything, like nested structures, arrays, base types (strings, numbers, booleans, null, undefined), special numbers (NaN, Infinity, -Infinity), functions, Dates, and Errors.
+*Performance*: The latency of various subsystems is described in the `"latency"` portion of package.json. The characteristics of my development machines are summarized in the `"dev"` portion of package.json.

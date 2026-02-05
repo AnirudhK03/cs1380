@@ -77,6 +77,7 @@ function revive(value) {
   }
 
   // check if its one of our tagged objects
+  //okay only added this || type check becaus eone of the test require that when it is stringified it has type in it not __type like what I had put. 
   if ("__type" in value || "type" in value) {
     var type = value["__type"] || value["type"];
 

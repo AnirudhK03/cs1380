@@ -77,8 +77,8 @@ function revive(value) {
   }
 
   // check if its one of our tagged objects
-  if ("__type" in value) {
-    var type = value["__type"];
+  if ("__type" in value || "type" in value) {
+    var type = value["__type"] || value["type"];
 
     if (type === "undefined") {
       return undefined;

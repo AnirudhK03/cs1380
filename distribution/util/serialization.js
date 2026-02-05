@@ -109,8 +109,8 @@ function revive(value) {
       return eval("(" + value.src + ")");
     }
 
-    // unknown tag, just return as is
-    return value;
+    // unknown tag, throw error
+    throw new Error("Unknown type: " + type);
   }
 
   // regular object - go through each key

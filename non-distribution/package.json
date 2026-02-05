@@ -1,5 +1,5 @@
 {
-  "name": "cs1380:m0",
+  "name": "cs1380:m1",
   "version": "1.0.0",
   "author": {
     "name": "Anirudh Kondapaneni",
@@ -28,7 +28,7 @@
   },
   "report": [
     {
-      "milestone": "M0",
+      "milestone": "M1",
       "hours": 12,
       "loc": 469,
       "dev": {

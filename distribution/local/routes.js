@@ -10,7 +10,23 @@
  * @returns {void}
  */
 function get(configuration, callback) {
-  return callback(new Error('routes.get not implemented'));
+  // return callback(new Error('routes.get not implemented'));
+  const local = global.distribution.local;
+
+  //get the name - 2 wyas thins can be structered according to param
+  let serviceName;
+  if (typeof configuration === "string") {
+    serviceName = configuration;
+  } else {
+    serviceName = configuration.service;
+  }
+
+  //check if name exists
+  if (local[serviceName] === undefined) {
+    return callback(new Error("Unknown service"));
+  }
+
+  callback(null, local[serviceName]);
 }
 
 /**
@@ -20,7 +36,11 @@ function get(configuration, callback) {
  * @returns {void}
  */
 function put(service, configuration, callback) {
-  return callback(new Error('routes.put not implemented'));
+  // return callback(new Error('routes.put not implemented'));
+  const local = global.distribution.local;
+
+  local[configuration] = service;
+  callback(null, configuration);
 }
 
 /**
@@ -28,7 +48,15 @@ function put(service, configuration, callback) {
  * @param {Callback} callback
  */
 function rem(configuration, callback) {
-  return callback(new Error('routes.rem not implemented'));
+  // return callback(new Error('routes.rem not implemented'));
+  const local = global.distribution.local;
+
+  if (local[configuration] === undefined) {
+    return callback(new Error("Unknown service"));
+  }
+
+  delete local[configuration];
+  callback(null, configuration);
 }
 
 module.exports = {get, put, rem};

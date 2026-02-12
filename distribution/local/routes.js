@@ -55,8 +55,9 @@ function rem(configuration, callback) {
     return callback(new Error("Unknown service"));
   }
 
+  const removed = local[configuration];
   delete local[configuration];
-  callback(null, configuration);
+  callback(null, removed);
 }
 
 module.exports = {get, put, rem};

@@ -87,7 +87,7 @@ function start(callback) {
 
     //only PUT requests checker
     if (req.method !== 'PUT') {
-      res.end(globalThis.distribution.util.serialize([new Error('Only PUT supported'), null]));
+      res.end(globalThis.distribution.util.serialize(new Error('Only PUT supported')));
       return;
     }
 

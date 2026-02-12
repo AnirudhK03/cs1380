@@ -30,6 +30,14 @@ function send(message, remote, callback) {
   // 4. deserialzie [e,v]
   // 5. calls callback(e,v)
 
+  if (!remote || !remote.node || !remote.node.ip || !remote.node.port) {
+    return callback(new Error('Missing remote node configuration'));
+  }
+
+  if (!remote.service || !remote.method) {
+    return callback(new Error('Missing service or method'));
+  }
+
   //create the HTTP path
   const gid = remote.gid || "local";
   const path = `/${gid}/${remote.service}/${remote.method}`;

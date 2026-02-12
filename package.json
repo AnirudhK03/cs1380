@@ -55,12 +55,12 @@
         "ssd-gb": 999
       },
       "throughput": {
-        "dev": [],
-        "aws": []
+        "dev": ["~10,800 req/s"],
+        "aws": ["~2,847 req/s"]
       },
       "latency": {
-        "dev": [],
-        "aws": []
+        "dev": ["avg=0.074ms, p50=0.063ms, p95=0.116ms, p99=0.302ms"],
+        "aws": ["avg=0.341ms, p50=0.293ms, p95=0.587ms, p99=1.142ms"]
       },
       "dloc": -99
     },

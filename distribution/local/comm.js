@@ -5,6 +5,7 @@
  */
 
 const http = require('node:http');
+const { serialize, deserialize } = require("../util/serialization.js");
 
 /**
  * @typedef {Object} Target
@@ -21,7 +22,42 @@ const http = require('node:http');
  * @returns {void}
  */
 function send(message, remote, callback) {
-  return callback(new Error('comm.send not implemented'));
+  // return callback(new Error('comm.send not implemented'));
+  // Steps: 
+  // 1. Serialize
+  // 2. send PUT
+  // 3. read response
+  // 4. deserialzie [e,v]
+  // 5. calls callback(e,v)
+
+  //create the HTTP path
+  const gid = remote.gid || "local";
+  const path = `/${gid}/${remote.service}/${remote.method}`;
+
+  //serialize
+  const body = serialize(message);
+
+  //request
+  const req = http.request(
+    {
+      hostname: remote.node.ip,
+      port: remote.node.port,
+      method: "PUT",
+      path: path,
+    },
+    (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        const [e,v] = deserialize(data);
+        callback(e,v);
+      });
+    }
+  );
+
+  req.on("error", (e) => callback(e));
+  req.write(body);
+  req.end();
 }
 
 module.exports = {send};

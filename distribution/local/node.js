@@ -85,6 +85,18 @@ function start(callback) {
 
     // Write some code...
 
+    //only PUT requests checker
+    if (req.method !== 'PUT') {
+      res.end(globalThis.distribution.util.serialize([new Error('Only PUT supported'), null]));
+      return;
+    }
+
+    //incremrnt the count var
+    if (globalThis.distribution.counts === undefined) {
+      globalThis.distribution.counts = 0;
+    }
+    globalThis.distribution.counts++;
+
 
     /*
       The path of the http request will determine the service to be used.
@@ -92,6 +104,24 @@ function start(callback) {
     */
 
     // Write some code...
+    //we need to extract service and method, and i guess the gid
+    const parsed = url.parse(req.url || '');
+    const parts = (parsed.pathname || '').split('/').filter(Boolean);
+
+    let gid = 'local';
+    let service, method;
+
+    if (parts.length === 3) {
+      gid = parts[0];
+      service = parts[1];
+      method = parts[2];
+    } else if (parts.length === 2) {
+      service = parts[0];
+      method = parts[1];
+    } else {
+      res.end(globalThis.distribution.util.serialize([new Error('Bad Path'), null]));
+      return;
+    }
 
 
     /*
@@ -114,6 +144,7 @@ function start(callback) {
     const body = [];
 
     req.on('data', (chunk) => {
+      body.push(chunk);
     });
 
     req.on('end', () => {
@@ -126,7 +157,27 @@ function start(callback) {
       */
 
       // Write some code...
+      const raw = Buffer.concat(body).toString();
+      const message = globalThis.distribution.util.deserialize(raw);
 
+      globalThis.distribution.local.routes.get(service, (e,svc) => {
+        if (e) {
+          const result = globalThis.distribution.util.serialize([e, null]);
+          res.end(result);
+          return;
+        }
+
+        if (typeof svc[method] !== "function") {
+          const result = globalThis.distribution.util.serialize([new Error("Unknown method"), null]);
+          res.end(result);
+          return;
+        }
+
+        svc[method](...message, (err, value) => {
+          const result = globalThis.distribution.util.serialize([err, value]);
+          res.end(result);
+        });
+      });
     });
   });
 

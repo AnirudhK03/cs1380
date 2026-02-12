@@ -133,3 +133,17 @@ My implementation comprises 2 software components, totaling 219 lines of code. K
 > Describe how you characterized the correctness and performance of your implementation
 *Correctness*: I wrote 5 tests; these tests take 1.8secs to execute. This includes objects with literally everything, like nested structures, arrays, base types (strings, numbers, booleans, null, undefined), special numbers (NaN, Infinity, -Infinity), functions, Dates, and Errors.
 *Performance*: The latency of various subsystems is described in the `"latency"` portion of package.json. The characteristics of my development machines are summarized in the `"dev"` portion of package.json.
+
+# M2: Actors and Remote Procedure Calls (RPC)
+## Summary
+My implementation comprises 4 software components, totaling 300 lines of code. Key challenges included 1) error propagation over HTTP — I was wrapping protocol errors in arrays when the receiver expected a bare Error, 2) wiring up the node.js HTTP server to correctly parse URLs, look up services via routes, and call methods, and 3) input validation in comm.send to catch missing ip/port/service/method before making the request.
+
+## Correctness & Performance Characterization
+*Correctness*: I wrote 6 tests; these tests take about 4 seconds to execute. They cover status, routes (put/get/rem), comm error handling, and a 1000-request benchmark.
+
+*Performance*: I sent 1000 comm requests in a tight loop. Dev: ~10,800 req/s, avg latency 0.074ms. Full stats in `package.json`.
+
+## Key Feature
+> How would you explain the implementation of `createRPC` to someone who has no background in computer science?
+
+Say you have a helper in your office. You want someone in another building to be able to use your helper. So you give them a card that says "mail your request to this address." When they use the card, the letter goes to your office, your helper does the work, and mails back the result. createRPC makes that card — it lets a remote machine call a function that actually runs on your machine, without the remote machine needing to know how it works.

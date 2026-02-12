@@ -47,8 +47,8 @@
     },
     {
       "milestone": "M2",
-      "hours": 999,
-      "loc": 999,
+      "hours": 12,
+      "loc": 300,
       "dev": {
         "cpu-no": 999,
         "mem-gb": 999,

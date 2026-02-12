@@ -158,7 +158,14 @@ function start(callback) {
 
       // Write some code...
       const raw = Buffer.concat(body).toString();
-      const message = globalThis.distribution.util.deserialize(raw);
+      let message;
+      try {
+        message = globalThis.distribution.util.deserialize(raw);
+      } catch (err) {
+        const result = globalThis.distribution.util.serialize([err, null]);
+        res.end(result);
+        return;
+      }
 
       globalThis.distribution.local.routes.get(service, (e,svc) => {
         if (e) {
@@ -173,10 +180,15 @@ function start(callback) {
           return;
         }
 
-        svc[method](...message, (err, value) => {
-          const result = globalThis.distribution.util.serialize([err, value]);
+        try {
+          svc[method](...message, (err, value) => {
+            const result = globalThis.distribution.util.serialize([err, value]);
+            res.end(result);
+          });
+        } catch (err) {
+          const result = globalThis.distribution.util.serialize([err, null]);
           res.end(result);
-        });
+        }
       });
     });
   });

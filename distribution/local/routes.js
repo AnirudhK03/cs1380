@@ -11,22 +11,27 @@
  */
 function get(configuration, callback) {
   // return callback(new Error('routes.get not implemented'));
-  const local = global.distribution.local;
 
-  //get the name - 2 wyas thins can be structered according to param
+  //get the name - 2 ways this can be structured according to param
   let serviceName;
+  let gid = 'local';
   if (typeof configuration === "string") {
     serviceName = configuration;
   } else {
     serviceName = configuration.service;
+    gid = configuration.gid || 'local';
   }
 
+  const container = gid === 'local'
+    ? globalThis.distribution.local
+    : globalThis.distribution[gid];
+
   //check if name exists
-  if (local[serviceName] === undefined) {
+  if (!container || container[serviceName] === undefined) {
     return callback(new Error("Unknown service"));
   }
 
-  callback(null, local[serviceName]);
+  callback(null, container[serviceName]);
 }
 
 /**

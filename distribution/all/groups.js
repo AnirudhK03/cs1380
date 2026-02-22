@@ -25,7 +25,13 @@ function groups(config) {
    * @param {Callback} callback
    */
   function put(config, group, callback) {
-    return callback(new Error('groups.put not implemented'));
+    var distribution = globalThis.distribution;
+    var remote = {service: 'groups', method: 'put'};
+
+    // send [config, group] to every node — each node calls local.groups.put(config, group)
+    distribution[context.gid].comm.send([config, group], remote, function(errors, values) {
+      callback(errors, values);
+    });
   }
 
   /**
@@ -33,7 +39,13 @@ function groups(config) {
    * @param {Callback} callback
    */
   function del(name, callback) {
-    return callback(new Error('groups.del not implemented'));
+    var distribution = globalThis.distribution;
+    var remote = {service: 'groups', method: 'del'};
+
+    // copy from above pretty much
+    distribution[context.gid].comm.send([name], remote, function(errors, values) {
+      callback(errors, values);
+    });
   }
 
   /**
@@ -41,7 +53,13 @@ function groups(config) {
    * @param {Callback} callback
    */
   function get(name, callback) {
-    return callback(new Error('groups.get not implemented'));
+    var distribution = globalThis.distribution;
+    var remote = {service: 'groups', method: 'get'};
+
+    // copy from above pretty much
+    distribution[context.gid].comm.send([name], remote, function(errors, values) {
+      callback(errors, values);
+    });
   }
 
   /**
@@ -50,7 +68,13 @@ function groups(config) {
    * @param {Callback} callback
    */
   function add(name, node, callback) {
-    return callback(new Error('groups.add not implemented'));
+    var distribution = globalThis.distribution;
+    var remote = {service: 'groups', method: 'add'};
+
+    // copy from above pretty much
+    distribution[context.gid].comm.send([name, node], remote, function(errors, values) {
+      callback(errors, values);
+    });
   }
 
   /**
@@ -59,7 +83,13 @@ function groups(config) {
    * @param {Callback} callback
    */
   function rem(name, node, callback) {
-    return callback(new Error('groups.rem not implemented'));
+    var distribution = globalThis.distribution;
+    var remote = {service: 'groups', method: 'rem'};
+
+    // copy from above pretty much
+    distribution[context.gid].comm.send([name, node], remote, function(errors, values) {
+      callback(errors, values);
+    });
   }
 
   return {

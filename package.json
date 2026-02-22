@@ -56,29 +56,29 @@
       },
       "throughput": {
         "dev": ["~10,800 req/s"],
-        "aws": ["~2,847 req/s"]
+        "aws": ["840.84 req/s"]
       },
       "latency": {
         "dev": ["avg=0.074ms, p50=0.063ms, p95=0.116ms, p99=0.302ms"],
-        "aws": ["avg=0.341ms, p50=0.293ms, p95=0.587ms, p99=1.142ms"]
+        "aws": ["latency ms: avg=1.045 p50=0.902 p95=1.448 p99=4.469"]
       },
       "dloc": -99
     },
     {
       "milestone": "M3",
-      "hours": 999,
-      "loc": 999,
+      "hours": 17,
+      "loc": 500,
       "dev": {
         "cpu-no": 999,
         "mem-gb": 999,
         "ssd-gb": 999
       },
       "throughput": {
-        "dev": [],
+        "dev": ["1666 ops/sec"],
         "aws": []
       },
       "latency": {
-        "dev": [],
+        "dev": ["1.5ms"],
         "aws": []
       },
       "dloc": -99

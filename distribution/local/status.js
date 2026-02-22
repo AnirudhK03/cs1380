@@ -60,14 +60,42 @@ function get(configuration, callback) {
  * @param {Callback} callback
  */
 function spawn(configuration, callback) {
-  callback(new Error('status.spawn not implemented'));
+  var childProcess = require('child_process');
+  var path = require('path');
+
+  var scriptPath = path.join(__dirname, '..', '..', 'distribution.js');
+
+  var configStr = globalThis.distribution.util.serialize(configuration);
+
+  var child = childProcess.spawn('node', [scriptPath, '--config', configStr], {
+    detached: true,
+    stdio: 'ignore',
+  });
+
+  child.unref();
+
+  // wait for the node to start, then add it to the 'all' group
+  setTimeout(function() {
+    globalThis.distribution.local.groups.add('all', configuration, null);
+    callback(null, configuration);
+  }, 500);
 }
 
 /**
  * @param {Callback} callback
  */
 function stop(callback) {
-  callback(new Error('status.stop not implemented'));
+  // send the response back first before we shut down
+  callback(null, true);
+
+  // wait for the response to be sent, then actually stop
+  setImmediate(function() {
+    var server = globalThis.distribution.node.server;
+    if (server) {
+      server.close();
+    }
+    process.exit(0);
+  });
 }
 
 module.exports = {get, spawn, stop};

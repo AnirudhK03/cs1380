@@ -167,7 +167,7 @@ function start(callback) {
         return;
       }
 
-      globalThis.distribution.local.routes.get(service, (e,svc) => {
+      globalThis.distribution.local.routes.get({service, gid}, (e,svc) => {
         if (e) {
           const result = globalThis.distribution.util.serialize([e, null]);
           res.end(result);

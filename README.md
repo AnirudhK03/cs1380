@@ -147,3 +147,15 @@ My implementation comprises 4 software components, totaling 300 lines of code. K
 > How would you explain the implementation of `createRPC` to someone who has no background in computer science?
 
 Say you have a helper in your office. You want someone in another building to be able to use your helper. So you give them a card that says "mail your request to this address." When they use the card, the letter goes to your office, your helper does the work, and mails back the result. createRPC makes that card — it lets a remote machine call a function that actually runs on your machine, without the remote machine needing to know how it works.
+
+# M3: Node Groups & Gossip Protocols
+## Summary
+My implementation comprises 5 new software components, totaling 520 added lines of code over the previous implementation. Key challenges included: 1) implementing `comm.send` to fire HTTP requests to all nodes in a group simultaneously and collect responses into a single errors/values map — the tricky part was figuring out how to track completion across N parallel callbacks without a counter getting out of sync (simply just did a equality check); 2) group relativity, where different nodes can have different local views of the same group — I had to realize you can't just use the distributed `groups.put` to override a single node's view, you need to `comm.send` directly to that node's local service; 3) getting `spawn` to register newly started nodes into the `all` group. The fix was simple once I realized the timeout already delayed the callback, so I just added `groups.add('all', configuration, null)` right before calling the user's callback.
+
+## Correctness & Performance Characterization
+*Correctness*: I wrote 5 student tests and filled out 4 scenario tests; together they take about 8 seconds to run (mostly from the 500ms gossip delay and node spawn times). The tests cover node liveness, group creation, dynamic membership, group relativity, and gossip propagation.
+
+*Performance*: Spawn time for a remote node is around 500ms (dominated by the fixed wait in `status.spawn`). For gossip, I used a subset function of 1 node per round, so with 3 nodes a message reaches all of them within 1–2 rounds (~500ms delay is enough). The avg latency for a single `comm.send` is about 1.5ms on dev, and throughput is roughly 1666 ops/sec. Full stats in `package.json`.
+
+## Key Feature
+The point of gossip is scalability and fault tolerance. If a node just sent the message directly to *all* other nodes in the group, two problems come up: first, it doesn't scale — as the group grows to thousands of nodes, every broadcast becomes an O(n) flood from a single sender, creating a bottleneck. Second, if that one sender crashes mid-send, some nodes get the message and some don't. With gossip, each node only forwards to a small subset (e.g., 1–3 nodes), and those nodes do the same.

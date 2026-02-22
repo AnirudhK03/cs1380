@@ -5,7 +5,7 @@
  */
 
 const http = require('node:http');
-const { serialize, deserialize } = require("../util/serialization.js");
+// const { serialize, deserialize } = require("../util/serialization.js");
 
 /**
  * @typedef {Object} Target
@@ -42,6 +42,10 @@ function send(message, remote, callback) {
   const gid = remote.gid || "local";
   const path = `/${gid}/${remote.service}/${remote.method}`;
 
+  //
+  const serialize = globalThis.distribution.util.serialize;
+  const deserialize = globalThis.distribution.util.deserialize;
+  
   //serialize
   const body = serialize(message);
 

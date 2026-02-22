@@ -5,12 +5,18 @@
  * @typedef {import("../types.js").Node} Node
  */
 
+const groups = {};
 /**
  * @param {string} name
  * @param {Callback} callback
  */
 function get(name, callback) {
-  return callback(new Error('groups.get not implemented'));
+  // return callback(new Error('groups.get not implemented'));
+  if (groups[name]) {
+    callback(null, groups[name]);
+  } else {
+    callback(new Error(`groups.get: group '${name}' not found`), null);
+  }
 }
 
 /**
@@ -19,7 +25,55 @@ function get(name, callback) {
  * @param {Callback} callback
  */
 function put(config, group, callback) {
-  return callback(new Error('groups.put not implemented'));
+  // return callback(new Error('groups.put not implemented'));
+  let name = "";
+  if (typeof config === "string") {
+    name = config;
+  } else if (config && typeof config === "object") {
+    name = config.gid || "";
+  }
+
+  if (!name) {
+    callback(new Error("groups.put: missing group name"));
+    return;
+  }
+
+  const distribution = globalThis.distribution;
+
+  const newGroup = {};
+  if (group && typeof group === "object") {
+    const keys = Object.keys(group);
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      const node = group[k];
+      if (!node) continue;
+      
+      newGroup[k] = node;
+    }
+  }
+
+  groups[name] = newGroup;
+
+  if (distribution) {
+    if (!distribution[name]) {
+      distribution[name] = {};
+    }
+  
+
+    const t = distribution.templates;
+    if (t) {
+      if (t.comm) distribution[name].comm = t.comm({ gid: name });
+      if (t.groups) distribution[name].groups = t.groups({ gid: name });
+      if (t.status) distribution[name].status = t.status({ gid: name });
+      if (t.routes) distribution[name].routes = t.routes({ gid: name });
+      if (t.gossip) distribution[name].gossip = t.gossip({ gid: name });
+      if (t.mem) distribution[name].mem = t.mem({ gid: name });
+      if (t.store) distribution[name].store = t.store({ gid: name });
+      if (t.mr) distribution[name].mr = t.mr({ gid: name });
+    }
+  }
+
+  callback(null, newGroup);
 }
 
 /**
@@ -27,7 +81,23 @@ function put(config, group, callback) {
  * @param {Callback} callback
  */
 function del(name, callback) {
-  return callback(new Error('groups.del not implemented'));
+  // return callback(new Error('groups.del not implemented'));
+  if (!groups[name]) {
+    callback(new Error(`groups.del: group '${name}' not found`), null);
+    return;
+  }
+
+  const saved = groups[name];
+  delete groups[name];
+
+  const distribution = globalThis.distribution;
+  if (distribution && name !== "local" && name !== "all") {
+    if (distribution[name]) {
+      delete distribution[name];
+    }
+  }
+
+  callback(null, saved);
 }
 
 /**
@@ -36,7 +106,21 @@ function del(name, callback) {
  * @param {Callback} callback
  */
 function add(name, node, callback) {
-  return callback(new Error('groups.add not implemented'));
+  // return callback(new Error('groups.add not implemented'));
+  if (!groups[name]) {
+    if (typeof callback === 'function') {
+      callback(new Error(`groups.add: group '${name}' not found`), null);
+    }
+    return;
+  }
+
+  const distribution = globalThis.distribution;
+  const sid = distribution.util.id.getSID(node);
+  groups[name][sid] = node;
+
+  if (typeof callback === 'function') {
+    callback(null, groups[name]);
+  }
 };
 
 /**
@@ -45,7 +129,25 @@ function add(name, node, callback) {
  * @param {Callback} callback
  */
 function rem(name, node, callback) {
-  return callback(new Error('groups.rem not implemented'));
+  // return callback(new Error('groups.rem not implemented'));
+  if (!groups[name]) {
+    callback(new Error(`groups.rem: group '${name}' not found`), null);
+    return;
+  }
+
+  delete groups[name][node];
+  callback(null, true);
 };
+
+// Initialize built-in groups with the local node
+(function initBuiltinGroups() {
+  const dist = globalThis.distribution;
+  if (dist && dist.node && dist.util && dist.util.id) {
+    const localNode = dist.node.config;
+    const localSid = dist.util.id.getSID(localNode);
+    groups['all'] = {[localSid]: localNode};
+    groups['local'] = {[localSid]: localNode};
+  }
+})();
 
 module.exports = {get, put, del, add, rem};

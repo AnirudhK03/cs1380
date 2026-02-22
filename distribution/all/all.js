@@ -54,6 +54,21 @@ const mr = require('./mr.js');
  * @returns {GroupServices}
  */
 function setup(config) {
+
+  // Expose service templates so other modules don't need require()
+  // (Important for overrides to work correctly)
+  if (!globalThis.distribution.templates) {
+    globalThis.distribution.templates = {};
+  }
+  globalThis.distribution.templates.comm = comm;
+  globalThis.distribution.templates.groups = groups;
+  globalThis.distribution.templates.status = status;
+  globalThis.distribution.templates.routes = routes;
+  globalThis.distribution.templates.gossip = gossip;
+  globalThis.distribution.templates.mem = mem;
+  globalThis.distribution.templates.store = store;
+  globalThis.distribution.templates.mr = mr;
+
   return {
     comm: comm(config),
     groups: groups(config),

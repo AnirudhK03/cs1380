@@ -159,3 +159,15 @@ My implementation comprises 5 new software components, totaling 625 added lines 
 
 ## Key Feature
 The point of gossip is scalability and fault tolerance. If a node just sent the message directly to *all* other nodes in the group, two problems come up: first, it doesn't scale — as the group grows to thousands of nodes, every broadcast becomes an O(n) flood from a single sender, creating a bottleneck. Second, if that one sender crashes mid-send, some nodes get the message and some don't. With gossip, each node only forwards to a small subset (e.g., 1–3 nodes), and those nodes do the same.
+
+# M4: Distributed Storage
+## Summary
+My implementation adds distributed `store` and `mem` services with consistent hashing, totaling ~200 lines of new code. The main challenge was correctly routing keys to nodes using `naiveHash`/`consistentHash` on NIDs, and handling `store.get(null)` by fanning out to all nodes and merging results.
+
+## Correctness & Performance Characterization
+*Correctness*: All provided local and distributed store/mem tests pass. Tests take about 10 seconds due to node spawn overhead.
+
+*Performance*: Characterized on 3 AWS t3.micro nodes. Insertion: 43.71 ops/sec, avg latency 22.878 ms. Retrieval: 45.95 ops/sec, avg latency 21.760 ms. Full stats in `package.json`.
+
+## Key Feature
+`reconf` first collects all keys before moving any objects because relocating data immediately risks reading from nodes that have already been partially migrated — you'd miss or double-move objects. A read-only key scan first gives a stable snapshot, then each object can be safely moved to its new node.

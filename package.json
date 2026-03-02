@@ -95,11 +95,11 @@
       },
       "throughput": {
         "dev": ["n/a"],
-        "aws": []
+        "aws": ["put: 43.71 ops/sec, get: 45.95 ops/sec"]
       },
       "latency": {
         "dev": ["n/a"],
-        "aws": []
+        "aws": ["put: 22.878 ms, get: 21.760 ms"]
       },
       "dloc": -99
     },

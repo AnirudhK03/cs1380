@@ -65,10 +65,11 @@ function mem(config) {
 
     if (key === null) return callback(new Error('mem.get: no key provided'), null);
 
+    const remoteGid = (configuration && typeof configuration === 'object' && configuration.gid) ? configuration.gid : context.gid;
     getTargetNode(key, (err, targetNode) => {
       if (err) return callback(err, null);
       const remote = {node: targetNode, service: 'mem', method: 'get'};
-      globalThis.distribution.local.comm.send([{key, gid: context.gid}], remote, callback);
+      globalThis.distribution.local.comm.send([{key, gid: remoteGid}], remote, callback);
     });
   }
 
@@ -85,10 +86,11 @@ function mem(config) {
 
     if (key === null) key = id.getID(state);
 
+    const remoteGid = (configuration && typeof configuration === 'object' && configuration.gid) ? configuration.gid : context.gid;
     getTargetNode(key, (err, targetNode) => {
       if (err) return callback(err, null);
       const remote = {node: targetNode, service: 'mem', method: 'put'};
-      globalThis.distribution.local.comm.send([state, {key, gid: context.gid}], remote, callback);
+      globalThis.distribution.local.comm.send([state, {key, gid: remoteGid}], remote, callback);
     });
   }
 
@@ -111,10 +113,11 @@ function mem(config) {
 
     if (key === null) return callback(new Error('mem.del: no key provided'), null);
 
+    const remoteGid = (configuration && typeof configuration === 'object' && configuration.gid) ? configuration.gid : context.gid;
     getTargetNode(key, (err, targetNode) => {
       if (err) return callback(err, null);
       const remote = {node: targetNode, service: 'mem', method: 'del'};
-      globalThis.distribution.local.comm.send([{key, gid: context.gid}], remote, callback);
+      globalThis.distribution.local.comm.send([{key, gid: remoteGid}], remote, callback);
     });
   }
 

@@ -13,9 +13,9 @@ const id = distribution.util.id;
 
 jest.spyOn(process, 'exit').mockImplementation(() => {});
 
-const n1 = {ip: '127.0.0.1', port: 7000};
-const n2 = {ip: '127.0.0.1', port: 7001};
-const n3 = {ip: '127.0.0.1', port: 7002};
+const n1 = {ip: '127.0.0.1', port: 7100};
+const n2 = {ip: '127.0.0.1', port: 7101};
+const n3 = {ip: '127.0.0.1', port: 7102};
 const allNodes = [n1, n2, n3];
 
 function startAllNodes(callback) {

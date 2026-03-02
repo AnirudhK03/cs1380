@@ -30,6 +30,18 @@ function extractKey(configuration) {
 }
 
 /**
+ * Extracts the gid from configuration (if present).
+ * @param {SimpleConfig} configuration
+ * @returns {string | null}
+ */
+function extractGid(configuration) {
+  if (!configuration || typeof configuration === 'string') {
+    return null;
+  }
+  return configuration.gid || null;
+}
+
+/**
  * @param {any} state
  * @param {SimpleConfig} configuration
  * @param {Callback} callback
@@ -39,7 +51,9 @@ function put(state, configuration, callback) {
   if (key === null) {
     key = id.getID(state);
   }
-  store.set(key, state);
+  const gid = extractGid(configuration);
+  const storeKey = gid ? gid + '/' + key : key;
+  store.set(storeKey, state);
   return callback(null, state);
 };
 
@@ -61,10 +75,12 @@ function get(configuration, callback) {
   if (key === null) {
     return callback(new Error('mem.get: no key provided'), null);
   }
-  if (!store.has(key)) {
+  const gid = extractGid(configuration);
+  const storeKey = gid ? gid + '/' + key : key;
+  if (!store.has(storeKey)) {
     return callback(new Error(`mem.get: key not found: ${key}`), null);
   }
-  return callback(null, store.get(key));
+  return callback(null, store.get(storeKey));
 }
 
 /**
@@ -76,11 +92,13 @@ function del(configuration, callback) {
   if (key === null) {
     return callback(new Error('mem.del: no key provided'), null);
   }
-  if (!store.has(key)) {
+  const gid = extractGid(configuration);
+  const storeKey = gid ? gid + '/' + key : key;
+  if (!store.has(storeKey)) {
     return callback(new Error(`mem.del: key not found: ${key}`), null);
   }
-  const value = store.get(key);
-  store.delete(key);
+  const value = store.get(storeKey);
+  store.delete(storeKey);
   return callback(null, value);
 };
 

@@ -62,14 +62,16 @@ function put(config, group, callback) {
 
     const t = distribution.templates;
     if (t) {
-      if (t.comm) distribution[name].comm = t.comm({ gid: name });
-      if (t.groups) distribution[name].groups = t.groups({ gid: name });
-      if (t.status) distribution[name].status = t.status({ gid: name });
-      if (t.routes) distribution[name].routes = t.routes({ gid: name });
-      if (t.gossip) distribution[name].gossip = t.gossip({ gid: name });
-      if (t.mem) distribution[name].mem = t.mem({ gid: name });
-      if (t.store) distribution[name].store = t.store({ gid: name });
-      if (t.mr) distribution[name].mr = t.mr({ gid: name });
+      // pass the full config (not just gid) so services get the hash function too
+      const serviceConfig = (typeof config === 'object' && config !== null) ? config : {gid: name};
+      if (t.comm) distribution[name].comm = t.comm(serviceConfig);
+      if (t.groups) distribution[name].groups = t.groups(serviceConfig);
+      if (t.status) distribution[name].status = t.status(serviceConfig);
+      if (t.routes) distribution[name].routes = t.routes(serviceConfig);
+      if (t.gossip) distribution[name].gossip = t.gossip(serviceConfig);
+      if (t.mem) distribution[name].mem = t.mem(serviceConfig);
+      if (t.store) distribution[name].store = t.store(serviceConfig);
+      if (t.mr) distribution[name].mr = t.mr(serviceConfig);
     }
   }
 

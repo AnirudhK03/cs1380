@@ -25,12 +25,13 @@ const BASE_STORE_DIR = path.join(__dirname, '../../store');
 //literally everything is here the same for mem just that we have to cccess to directories so thus we need path and fs
 
 /**
- * Returns the node-specific store directory (store/<NID>/)
+ * Returns the directory to store items in, namespaced by NID and optionally GID.
+ * @param {string | null} gid
  * @returns {string}
  */
-function getStoreDir() {
+function getStoreDir(gid) {
   const nid = id.getNID(globalThis.distribution.node.config);
-  const dir = path.join(BASE_STORE_DIR, nid);
+  const dir = gid ? path.join(BASE_STORE_DIR, nid, gid) : path.join(BASE_STORE_DIR, nid);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, {recursive: true});
   }
@@ -62,6 +63,18 @@ function extractKey(configuration) {
 }
 
 /**
+ * Extracts the gid from configuration (if present).
+ * @param {SimpleConfig} configuration
+ * @returns {string | null}
+ */
+function extractGid(configuration) {
+  if (!configuration || typeof configuration === 'string') {
+    return null;
+  }
+  return configuration.gid || null;
+}
+
+/**
  * @param {any} state
  * @param {SimpleConfig} configuration
  * @param {Callback} callback
@@ -71,7 +84,8 @@ function put(state, configuration, callback) {
   if (key === null) {
     key = id.getID(state);
   }
-  const filename = path.join(getStoreDir(), sanitizeKey(key));
+  const gid = extractGid(configuration);
+  const filename = path.join(getStoreDir(gid), sanitizeKey(key));
   fs.writeFile(filename, serialization.serialize(state), (err) => {
     if (err) {
       return callback(err, null);
@@ -89,7 +103,8 @@ function get(configuration, callback) {
   if (key === null) {
     return callback(new Error('store.get: no key provided'), null);
   }
-  const filename = path.join(getStoreDir(), sanitizeKey(key));
+  const gid = extractGid(configuration);
+  const filename = path.join(getStoreDir(gid), sanitizeKey(key));
   fs.readFile(filename, 'utf8', (err, data) => {
     if (err) {
       return callback(new Error(`store.get: key not found: ${key}`), null);
@@ -111,7 +126,8 @@ function del(configuration, callback) {
   if (key === null) {
     return callback(new Error('store.del: no key provided'), null);
   }
-  const filename = path.join(getStoreDir(), sanitizeKey(key));
+  const gid = extractGid(configuration);
+  const filename = path.join(getStoreDir(gid), sanitizeKey(key));
   fs.readFile(filename, 'utf8', (err, data) => {
     if (err) {
       return callback(new Error(`store.del: key not found: ${key}`), null);

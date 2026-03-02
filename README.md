@@ -162,12 +162,12 @@ The point of gossip is scalability and fault tolerance. If a node just sent the 
 
 # M4: Distributed Storage
 ## Summary
-My implementation adds distributed `store` and `mem` services with consistent hashing, totaling ~200 lines of new code. The main challenge was correctly routing keys to nodes using `naiveHash`/`consistentHash` on NIDs, and handling `store.get(null)` by fanning out to all nodes and merging results.
+My implementation adds distributed (and local) `store` and `mem` services with consistent hashing, totaling ~250 lines of new code. The main challenge was correctly routing keys to nodes using `naiveHash`/`consistentHash` on NIDs, and handling `store.get(null)`.
 
 ## Correctness & Performance Characterization
-*Correctness*: All provided local and distributed store/mem tests pass. Tests take about 10 seconds due to node spawn overhead.
+*Correctness*: All provided local and distributed store/mem tests pass (I think). Tests take about 10 seconds probably due to the node spawn overhead.
 
-*Performance*: Characterized on 3 AWS t3.micro nodes. Insertion: 43.71 ops/sec, avg latency 22.878 ms. Retrieval: 45.95 ops/sec, avg latency 21.760 ms. Full stats in `package.json`.
+*Performance*: Characterized on 3 AWS t3.micro nodes. Insertion: 43.71 ops/sec, avg latency 22.878 ms. Retrieval: 45.95 ops/sec, avg latency 21.760 ms. Full stats in `package.json`. Honeslty, getting the script working, and connecting to the ec2 instances was the hardest part of this project.
 
 ## Key Feature
-`reconf` first collects all keys before moving any objects because relocating data immediately risks reading from nodes that have already been partially migrated — you'd miss or double-move objects. A read-only key scan first gives a stable snapshot, then each object can be safely moved to its new node.
+`reconf` first collects all keys before moving any objects because relocating data immediately risks reading from nodes that have already been partially migrated.

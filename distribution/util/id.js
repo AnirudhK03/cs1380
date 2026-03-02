@@ -72,10 +72,60 @@ const naiveHash = (kid, nids) => {
 
 /** @type { Hasher } */
 const consistentHash = (kid, nids) => {
+  const ring = [];
+  for (let i = 0; i < nids.length; i++) {
+    ring.push({num: idToNum(nids[i]), id: nids[i]});
+  }
+  ring.push({num: idToNum(kid), id: kid});
+
+  // sort by value
+  ring.sort(function(a, b) {
+    if (a.num < b.num) {
+      return -1;
+    } else if (a.num > b.num) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+
+  // find where kid is on the ring
+  let kidIndex = -1;
+  for (let i = 0; i < ring.length; i++) {
+    if (ring[i].id === kid) {
+      kidIndex = i;
+      break;
+    }
+  }
+
+  // go clockwise from kid and return the first nid we hit
+  for (let i = 1; i <= ring.length; i++) {
+    const next = ring[(kidIndex + i) % ring.length];
+    if (next.id !== kid) {
+      return next.id;
+    }
+  }
 };
 
 /** @type { Hasher } */
 const rendezvousHash = (kid, nids) => {
+  // For each NID, compute sha256(kid + nid) and convert to a number
+  // The NID with the highest score wins
+  let bestNid = null;
+  let bestScore = BigInt(-1);
+
+  for (const nid of nids) {
+    const combined = kid + nid;
+    const hashed = getID(combined);
+    const score = idToNum(hashed);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestNid = nid;
+    }
+  }
+
+  return bestNid;
 };
 
 module.exports = {

@@ -32,11 +32,44 @@ function mem(config) {
   context.hash = config.hash || globalThis.distribution.util.id.naiveHash;
 
   /**
+   * Looks up the group, hashes the key to pick one node,
+   * and calls back with that node object.
+   * @param {string} key
+   * @param {(err: Error | null, node?: Node) => void} callback
+   */
+  function getTargetNode(key, callback) {
+    const distribution = globalThis.distribution;
+    const id = distribution.util.id;
+
+    distribution.local.groups.get(context.gid, (err, group) => {
+      if (err) return callback(err);
+      const nidToNode = {};
+      for (const node of Object.values(group)) {
+        nidToNode[id.getNID(node)] = node;
+      }
+
+      const nids = Object.keys(nidToNode);
+      const kid = id.getID(key);
+      const targetNID = context.hash(kid, nids);
+      callback(null, nidToNode[targetNID]);
+    });
+  }
+
+  /**
    * @param {SimpleConfig} configuration
    * @param {Callback} callback
    */
   function get(configuration, callback) {
-    return callback(new Error('mem.get not implemented'));
+    const key = typeof configuration === 'string' ? configuration
+      : (configuration && configuration.key) ? configuration.key : null;
+
+    if (key === null) return callback(new Error('mem.get: no key provided'), null);
+
+    getTargetNode(key, (err, targetNode) => {
+      if (err) return callback(err, null);
+      const remote = {node: targetNode, service: 'mem', method: 'get'};
+      globalThis.distribution.local.comm.send([{key, gid: context.gid}], remote, callback);
+    });
   }
 
   /**
@@ -45,7 +78,18 @@ function mem(config) {
    * @param {Callback} callback
    */
   function put(state, configuration, callback) {
-    return callback(new Error('mem.put not implemented'));
+    const id = globalThis.distribution.util.id;
+
+    let key = typeof configuration === 'string' ? configuration
+      : (configuration && configuration.key) ? configuration.key : null;
+
+    if (key === null) key = id.getID(state);
+
+    getTargetNode(key, (err, targetNode) => {
+      if (err) return callback(err, null);
+      const remote = {node: targetNode, service: 'mem', method: 'put'};
+      globalThis.distribution.local.comm.send([state, {key, gid: context.gid}], remote, callback);
+    });
   }
 
   /**
@@ -62,7 +106,16 @@ function mem(config) {
    * @param {Callback} callback
    */
   function del(configuration, callback) {
-    return callback(new Error('mem.del not implemented'));
+    const key = typeof configuration === 'string' ? configuration
+      : (configuration && configuration.key) ? configuration.key : null;
+
+    if (key === null) return callback(new Error('mem.del: no key provided'), null);
+
+    getTargetNode(key, (err, targetNode) => {
+      if (err) return callback(err, null);
+      const remote = {node: targetNode, service: 'mem', method: 'del'};
+      globalThis.distribution.local.comm.send([{key, gid: context.gid}], remote, callback);
+    });
   }
 
   /**
@@ -72,8 +125,7 @@ function mem(config) {
   function reconf(configuration, callback) {
     return callback(new Error('mem.reconf not implemented'));
   }
-  /* For the distributed mem service, the configuration will
-          always be a string */
+
   return {
     get,
     put,

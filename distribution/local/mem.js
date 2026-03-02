@@ -9,6 +9,25 @@
  * @typedef {StoreConfig | string | null} SimpleConfig
  */
 
+const id = require('../util/id.js');
+
+/** @type {Map<string, any>} */
+const store = new Map();
+
+/**
+ * Extracts the string key.
+ * @param {SimpleConfig} configuration
+ * @returns {string | null}
+ */
+function extractKey(configuration) {
+  if (configuration === null || configuration === undefined) {
+    return null;
+  }
+  if (typeof configuration === 'string') {
+    return configuration;
+  }
+  return configuration.key ?? null;
+}
 
 /**
  * @param {any} state
@@ -16,7 +35,12 @@
  * @param {Callback} callback
  */
 function put(state, configuration, callback) {
-  return callback(new Error('mem.put not implemented'));
+  let key = extractKey(configuration);
+  if (key === null) {
+    key = id.getID(state);
+  }
+  store.set(key, state);
+  return callback(null, state);
 };
 
 /**
@@ -33,7 +57,14 @@ function append(state, configuration, callback) {
  * @param {Callback} callback
  */
 function get(configuration, callback) {
-  return callback(new Error('mem.get not implemented'));
+  const key = extractKey(configuration);
+  if (key === null) {
+    return callback(new Error('mem.get: no key provided'), null);
+  }
+  if (!store.has(key)) {
+    return callback(new Error(`mem.get: key not found: ${key}`), null);
+  }
+  return callback(null, store.get(key));
 }
 
 /**
@@ -41,7 +72,16 @@ function get(configuration, callback) {
  * @param {Callback} callback
  */
 function del(configuration, callback) {
-  return callback(new Error('mem.del not implemented'));
+  const key = extractKey(configuration);
+  if (key === null) {
+    return callback(new Error('mem.del: no key provided'), null);
+  }
+  if (!store.has(key)) {
+    return callback(new Error(`mem.del: key not found: ${key}`), null);
+  }
+  const value = store.get(key);
+  store.delete(key);
+  return callback(null, value);
 };
 
 module.exports = {put, get, del, append};

@@ -63,7 +63,16 @@ function put(state, configuration, callback) {
  * @param {Callback} callback
  */
 function append(state, configuration, callback) {
-  return callback(new Error('mem.append not implemented')); // You'll need to implement this method for the distributed processing milestone.
+  const key = extractKey(configuration);
+  if (key === null) {
+    return callback(new Error('mem.append: no key provided'), null);
+  }
+  const gid = extractGid(configuration);
+  const storeKey = gid ? gid + '/' + key : key;
+  const existing = store.has(storeKey) ? store.get(storeKey) : [];
+  existing.push(state);
+  store.set(storeKey, existing);
+  return callback(null, existing);
 };
 
 /**
@@ -73,7 +82,19 @@ function append(state, configuration, callback) {
 function get(configuration, callback) {
   const key = extractKey(configuration);
   if (key === null) {
-    return callback(new Error('mem.get: no key provided'), null);
+    // return all keys stored under this gid
+    const gid = extractGid(configuration);
+    if (!gid) {
+      return callback(new Error('mem.get: no key provided'), null);
+    }
+    const prefix = gid + '/';
+    const keys = [];
+    for (const storeKey of store.keys()) {
+      if (storeKey.startsWith(prefix)) {
+        keys.push(storeKey.slice(prefix.length));
+      }
+    }
+    return callback(null, keys);
   }
   const gid = extractGid(configuration);
   const storeKey = gid ? gid + '/' + key : key;

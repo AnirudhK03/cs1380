@@ -100,7 +100,19 @@ function mem(config) {
    * @param {Callback} callback
    */
   function append(state, configuration, callback) {
-    return callback(new Error('mem.append not implemented')); // You'll need to implement this method for the distributed processing milestone.
+    const id = globalThis.distribution.util.id;
+
+    let key = typeof configuration === 'string' ? configuration
+      : (configuration && configuration.key) ? configuration.key : null;
+
+    if (key === null) return callback(new Error('mem.append: no key provided'), null);
+
+    const remoteGid = (configuration && typeof configuration === 'object' && configuration.gid) ? configuration.gid : context.gid;
+    getTargetNode(key, (err, targetNode) => {
+      if (err) return callback(err, null);
+      const remote = {node: targetNode, service: 'mem', method: 'append'};
+      globalThis.distribution.local.comm.send([state, {key, gid: remoteGid}], remote, callback);
+    });
   }
 
   /**

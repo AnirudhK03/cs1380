@@ -94,9 +94,20 @@ test('(10 pts) (scenario) all.mr:dlib', (done) => {
 */
 
   const mapper = (key, value) => {
+    const words = value.split(/\s+/).filter((w) => w !== '');
+    const out = [];
+    for (let i = 0; i < words.length; i++) {
+      const obj = {};
+      obj[words[i]] = 1;
+      out.push(obj);
+    }
+    return out;
   };
 
   const reducer = (key, values) => {
+    const out = {};
+    out[key] = values.reduce((a, b) => a + b, 0);
+    return out;
   };
 
   const dataset = [
@@ -169,11 +180,41 @@ test('(10 pts) (scenario) all.mr:tfidf', (done) => {
 */
 
   const mapper = (key, value) => {
+    const words = value.split(/\s+/).filter((w) => w !== '');
+    const totalWords = words.length;
+    const wordCount = {};
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      wordCount[word] = (wordCount[word] || 0) + 1;
+    }
+    const out = [];
+    const uniqueWords = Object.keys(wordCount);
+    for (let j = 0; j < uniqueWords.length; j++) {
+      const word = uniqueWords[j];
+      const tf = wordCount[word] / totalWords;
+      const obj = {};
+      obj[word] = {};
+      obj[word][key] = tf;
+      out.push(obj);
+    }
+    return out;
   };
 
   // Reduce function: calculate TF-IDF for each word
   const reducer = (key, values) => {
     const totalDocs = 3;
+    const df = values.length;
+    const idf = Math.log10(totalDocs / df);
+    const docScores = {};
+    for (let i = 0; i < values.length; i++) {
+      const docEntry = values[i];
+      const docId = Object.keys(docEntry)[0];
+      const tf = docEntry[docId];
+      docScores[docId] = parseFloat((tf * idf).toFixed(2));
+    }
+    const out = {};
+    out[key] = docScores;
+    return out;
   };
 
   const dataset = [
@@ -239,15 +280,193 @@ test('(10 pts) (scenario) all.mr:crawl', (done) => {
 });
 
 test('(10 pts) (scenario) all.mr:urlxtr', (done) => {
-    done(new Error('Implement the map and reduce functions'));
+  /*
+    URL extraction: extract all URLs from each page value using a regex.
+    Mapper: emit {url: 1} for each URL found in the text.
+    Reducer: sum the counts to get how many pages contain each URL.
+  */
+  const mapper = (key, value) => {
+    const urlRegex = /https?:\/\/\S+/g;
+    const matches = value.match(urlRegex) || [];
+    const out = [];
+    for (let i = 0; i < matches.length; i++) {
+      const obj = {};
+      obj[matches[i]] = 1;
+      out.push(obj);
+    }
+    return out;
+  };
+
+  const reducer = (key, values) => {
+    const out = {};
+    out[key] = values.reduce((a, b) => a + b, 0);
+    return out;
+  };
+
+  const dataset = [
+    {'page1': 'Visit http://cs.brown.edu and check http://cs.brown.edu/courses for info'},
+    {'page2': 'Go to http://cs.brown.edu for more details'},
+    {'page3': 'See http://example.com today'},
+  ];
+
+  const expected = [
+    {'http://cs.brown.edu': 2},
+    {'http://cs.brown.edu/courses': 1},
+    {'http://example.com': 1},
+  ];
+
+  const doMapReduce = () => {
+    const keys = dataset.map((o) => Object.keys(o)[0]);
+    distribution.urlxtr.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+      try {
+        expect(v).toEqual(expect.arrayContaining(expected));
+        expect(v).toHaveLength(expected.length);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+  };
+
+  let cntr = 0;
+  dataset.forEach((o) => {
+    const key = Object.keys(o)[0];
+    const value = o[key];
+    distribution.urlxtr.store.put(value, key, (e, v) => {
+      cntr++;
+      if (cntr === dataset.length) {
+        doMapReduce();
+      }
+    });
+  });
 });
 
 test('(10 pts) (scenario) all.mr:strmatch', (done) => {
-    done(new Error('Implement the map and reduce functions'));
+  /*
+    Distributed string matching: given a regex, find all object IDs whose
+    value matches it.
+    Mapper: emit {key: 1} if the value matches the regex, else return [].
+    Reducer: sum the 1s — result is {key: count} for each matching document.
+  */
+  const regex = /super/;
+
+  const mapper = (key, value) => {
+    if (regex.test(value)) {
+      const out = {};
+      out[key] = 1;
+      return [out];
+    }
+    return [];
+  };
+
+  const reducer = (key, values) => {
+    const out = {};
+    out[key] = values.reduce((a, b) => a + b, 0);
+    return out;
+  };
+
+  const dataset = [
+    {'inc1': 'You are Elastigirl! My God, pull yourself together!'},
+    {'inc2': 'Where is my super suit?'},
+    {'inc3': 'No capes!'},
+    {'inc4': 'If everyone is super, no one will be.'},
+    {'inc5': 'I never look back darling, it distracts from the now.'},
+  ];
+
+  // only inc2 and inc4 contain "super"
+  const expected = [{'inc2': 1}, {'inc4': 1}];
+
+  const doMapReduce = () => {
+    const keys = dataset.map((o) => Object.keys(o)[0]);
+    distribution.strmatch.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+      try {
+        expect(v).toEqual(expect.arrayContaining(expected));
+        expect(v).toHaveLength(expected.length);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+  };
+
+  let cntr = 0;
+  dataset.forEach((o) => {
+    const key = Object.keys(o)[0];
+    const value = o[key];
+    distribution.strmatch.store.put(value, key, (e, v) => {
+      cntr++;
+      if (cntr === dataset.length) {
+        doMapReduce();
+      }
+    });
+  });
 });
 
 test('(10 pts) (scenario) all.mr:ridx', (done) => {
-    done(new Error('Implement the map and reduce functions'));
+  /*
+    Inverted index: for each term in the dataset, record which document IDs
+    contain it.
+    Mapper: for each unique word in the document, emit {word: docId}.
+    Reducer: collect all docIds into an array — result is {word: [docId, ...]}.
+  */
+  const mapper = (key, value) => {
+    const words = value.split(/\s+/).filter((w) => w !== '');
+    const seen = {};
+    const out = [];
+    for (let i = 0; i < words.length; i++) {
+      if (!seen[words[i]]) {
+        seen[words[i]] = true;
+        const obj = {};
+        obj[words[i]] = key;
+        out.push(obj);
+      }
+    }
+    return out;
+  };
+
+  const reducer = (key, values) => {
+    const out = {};
+    out[key] = values;
+    return out;
+  };
+
+  // each document uses unique words so expected docId lists are deterministic
+  const dataset = [
+    {'inc1': 'incredible elastigirl violet'},
+    {'inc2': 'frozone syndrome omnidroid'},
+    {'inc3': 'dash jack edna'},
+  ];
+
+  const expected = [
+    {'incredible': ['inc1']}, {'elastigirl': ['inc1']}, {'violet': ['inc1']},
+    {'frozone': ['inc2']}, {'syndrome': ['inc2']}, {'omnidroid': ['inc2']},
+    {'dash': ['inc3']}, {'jack': ['inc3']}, {'edna': ['inc3']},
+  ];
+
+  const doMapReduce = () => {
+    const keys = dataset.map((o) => Object.keys(o)[0]);
+    distribution.ridx.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+      try {
+        expect(v).toEqual(expect.arrayContaining(expected));
+        expect(v).toHaveLength(expected.length);
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+  };
+
+  let cntr = 0;
+  dataset.forEach((o) => {
+    const key = Object.keys(o)[0];
+    const value = o[key];
+    distribution.ridx.store.put(value, key, (e, v) => {
+      cntr++;
+      if (cntr === dataset.length) {
+        doMapReduce();
+      }
+    });
+  });
 });
 
 test('(10 pts) (scenario) all.mr:rlg', (done) => {
@@ -317,6 +536,26 @@ beforeAll((done) => {
                   done();
                 });
               });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// 3 new scenarios make usre the nodes are avalaible
+beforeAll((done) => {
+  const urlxtrConfig = {gid: 'urlxtr'};
+  distribution.local.groups.put(urlxtrConfig, urlxtrGroup, (e, v) => {
+    distribution.urlxtr.groups.put(urlxtrConfig, urlxtrGroup, (e, v) => {
+      const strmatchConfig = {gid: 'strmatch'};
+      distribution.local.groups.put(strmatchConfig, strmatchGroup, (e, v) => {
+        distribution.strmatch.groups.put(strmatchConfig, strmatchGroup, (e, v) => {
+          const ridxConfig = {gid: 'ridx'};
+          distribution.local.groups.put(ridxConfig, ridxGroup, (e, v) => {
+            distribution.ridx.groups.put(ridxConfig, ridxGroup, (e, v) => {
+              done();
             });
           });
         });

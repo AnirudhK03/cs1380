@@ -208,7 +208,14 @@ test('(1 pts) student test', (done) => {
   const datasetKeys = dataset.map((o) => Object.keys(o)[0]);
 
   const doMapReduce = () => {
+    const inputBytes = dataset.reduce((sum, o) => sum + Object.values(o)[0].length, 0);
+    const start = performance.now();
+
     distribution.singlekeyg.mr.exec({keys: datasetKeys, map: mapper, reduce: reducer}, (e, v) => {
+      const elapsed = performance.now() - start;
+      const throughput = (inputBytes / (elapsed / 1000)).toFixed(2);
+      console.log(`[singlekeyg mr] latency: ${elapsed.toFixed(0)}ms | input: ${inputBytes} bytes | throughput: ${throughput} bytes/sec`);
+
       try {
         expect(v).toEqual(expect.arrayContaining(expected));
         done();

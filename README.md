@@ -171,3 +171,26 @@ My implementation adds distributed (and local) `store` and `mem` services with c
 
 ## Key Feature
 `reconf` first collects all keys before moving any objects because relocating data immediately risks reading from nodes that have already been partially migrated.
+
+
+# M5: Distributed Execution Engine
+
+## Summary
+
+My implementation comprises 2 new software components (mr.js and store.append), totaling approximately 150 added lines of code over the previous implementation. Key challenges included:
+
+1. **Variable Block Declaration** — mapper and reducer functions are serialized and sent to remote nodes, so any variables referenced from outer scope (like `const regex = /super/`) are lost. Solved by inlining all dependencies directly inside the mapper/reducer functions.
+
+2. **Testing: Keys From Previous Tests** — since all groups share the same physical nodes, `store.get(null)` returns keys from other tests/groups. Solved by filtering returned keys against the known keys before passing them to `mr.exec`.
+
+3. **The map-shuffle-reduce pipeline** — making sure each phase completes across all nodes before starting the next (it was heard to think about it at first, but once you understand its literally just a glorified for loop it was easy to implement), using callback counting to track when all nodes have finished each step (this was laso hard to wrap head around at first but then it was easy once you understand that the callback just wait until everything is finished).
+
+## Correctness & Performance Characterization
+
+*Correctness*: I wrote 5 tests testing empty key input, all values collapsing to a single reduce key, mixed empty and non-empty mapper output, non-array mapper return values, and single-document minimal MR pipelines. For the scenarios, I implemented the string matching, url extracting, and inverted index.
+
+*Performance*: My MapReduce workflow can process small datasets (5-10 documents) across 3 nodes in under 2 seconds, with the majority of time spent on network communication during the shuffle phase.
+
+## Key Feature
+
+The map phase checks if the mapper output is an array or a single object, and normalizes both into a flat results array before storing. This allows mappers to return either `{key: value}` or `[{key: value}, ...]`.

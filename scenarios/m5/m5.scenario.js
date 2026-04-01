@@ -315,16 +315,22 @@ test('(10 pts) (scenario) all.mr:urlxtr', (done) => {
     {'http://example.com': 1},
   ];
 
-  const doMapReduce = () => {
-    const keys = dataset.map((o) => Object.keys(o)[0]);
-    distribution.urlxtr.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+    const doMapReduce = () => {
+    distribution.urlxtr.store.get(null, (e, v) => {
       try {
-        expect(v).toEqual(expect.arrayContaining(expected));
-        expect(v).toHaveLength(expected.length);
-        done();
-      } catch (err) {
-        done(err);
+        expect(v.length).toEqual(dataset.length);
+      } catch (e) {
+        done(e);
       }
+      distribution.urlxtr.mr.exec({keys: v, map: mapper, reduce: reducer}, (e, v) => {
+        try {
+          expect(v).toEqual(expect.arrayContaining(expected));
+          expect(v).toHaveLength(expected.length);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
     });
   };
 
@@ -348,10 +354,10 @@ test('(10 pts) (scenario) all.mr:strmatch', (done) => {
     Mapper: emit {key: 1} if the value matches the regex, else return [].
     Reducer: sum the 1s — result is {key: count} for each matching document.
   */
-  const regex = /super/;
+  // const regex = /super/;
 
   const mapper = (key, value) => {
-    if (regex.test(value)) {
+    if (/super/.test(value)) {
       const out = {};
       out[key] = 1;
       return [out];
@@ -377,15 +383,26 @@ test('(10 pts) (scenario) all.mr:strmatch', (done) => {
   const expected = [{'inc2': 1}, {'inc4': 1}];
 
   const doMapReduce = () => {
-    const keys = dataset.map((o) => Object.keys(o)[0]);
-    distribution.strmatch.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+    distribution.strmatch.store.get(null, (e, v) => {
       try {
-        expect(v).toEqual(expect.arrayContaining(expected));
-        expect(v).toHaveLength(expected.length);
-        done();
-      } catch (err) {
-        done(err);
+        expect(v.length).toEqual(dataset.length);
+      } catch (e) {
+        done(e);
       }
+      const mrStart = Date.now();
+      distribution.strmatch.mr.exec({keys: v, map: mapper, reduce: reducer}, (e, v) => {
+        const mrLatency = Date.now() - mrStart;
+        const totalBytes = dataset.reduce((sum, o) => sum + Object.values(o)[0].length, 0);
+        const throughput = (totalBytes / (mrLatency / 1000)).toFixed(2);
+        console.log(`[strmatch mr] latency: ${mrLatency}ms | input: ${totalBytes} bytes | throughput: ${throughput} bytes/sec`);
+        try {
+          expect(v).toEqual(expect.arrayContaining(expected));
+          expect(v).toHaveLength(expected.length);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
     });
   };
 
@@ -430,29 +447,38 @@ test('(10 pts) (scenario) all.mr:ridx', (done) => {
     return out;
   };
 
-  // each document uses unique words so expected docId lists are deterministic
   const dataset = [
-    {'inc1': 'incredible elastigirl violet'},
-    {'inc2': 'frozone syndrome omnidroid'},
-    {'inc3': 'dash jack edna'},
+    {'rdoc1': 'incredible elastigirl violet'},
+    {'rdoc2': 'frozone syndrome omnidroid'},
+    {'rdoc3': 'dash jack edna'},
   ];
 
   const expected = [
-    {'incredible': ['inc1']}, {'elastigirl': ['inc1']}, {'violet': ['inc1']},
-    {'frozone': ['inc2']}, {'syndrome': ['inc2']}, {'omnidroid': ['inc2']},
-    {'dash': ['inc3']}, {'jack': ['inc3']}, {'edna': ['inc3']},
+    {'incredible': ['rdoc1']}, {'elastigirl': ['rdoc1']}, {'violet': ['rdoc1']},
+    {'frozone': ['rdoc2']}, {'syndrome': ['rdoc2']}, {'omnidroid': ['rdoc2']},
+    {'dash': ['rdoc3']}, {'jack': ['rdoc3']}, {'edna': ['rdoc3']},
   ];
 
+  const datasetKeys = dataset.map((o) => Object.keys(o)[0]);
+
   const doMapReduce = () => {
-    const keys = dataset.map((o) => Object.keys(o)[0]);
-    distribution.ridx.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+    distribution.ridx.store.get(null, (e, v) => {
+      // grabbing the keys of only our dataset
+      const keys = v.filter((k) => datasetKeys.includes(k));
       try {
-        expect(v).toEqual(expect.arrayContaining(expected));
-        expect(v).toHaveLength(expected.length);
-        done();
-      } catch (err) {
-        done(err);
+        expect(keys.length).toEqual(dataset.length);
+      } catch (e) {
+        done(e);
       }
+      distribution.ridx.mr.exec({keys: keys, map: mapper, reduce: reducer}, (e, v) => {
+        try {
+          expect(v).toEqual(expect.arrayContaining(expected));
+          expect(v).toHaveLength(expected.length);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
     });
   };
 
@@ -533,29 +559,24 @@ beforeAll((done) => {
               const tfidfConfig = {gid: 'tfidf'};
               distribution.local.groups.put(tfidfConfig, tfidfGroup, (e, v) => {
                 distribution.tfidf.groups.put(tfidfConfig, tfidfGroup, (e, v) => {
-                  done();
+                    const urlxtrConfig = {gid: 'urlxtr'};
+                    distribution.local.groups.put(urlxtrConfig, urlxtrGroup, (e, v) => {
+                      distribution.urlxtr.groups.put(urlxtrConfig, urlxtrGroup, (e, v) => {
+                        const strmatchConfig = {gid: 'strmatch'};
+                        distribution.local.groups.put(strmatchConfig, strmatchGroup, (e, v) => {
+                          distribution.strmatch.groups.put(strmatchConfig, strmatchGroup, (e, v) => {
+                            const ridxConfig = {gid: 'ridx'};
+                            distribution.local.groups.put(ridxConfig, ridxGroup, (e, v) => {
+                              distribution.ridx.groups.put(ridxConfig, ridxGroup, (e, v) => {
+                                done();
+                              });
+                            });
+                          });
+                        });
+                      });
+                    });
                 });
               });
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-// 3 new scenarios make usre the nodes are avalaible
-beforeAll((done) => {
-  const urlxtrConfig = {gid: 'urlxtr'};
-  distribution.local.groups.put(urlxtrConfig, urlxtrGroup, (e, v) => {
-    distribution.urlxtr.groups.put(urlxtrConfig, urlxtrGroup, (e, v) => {
-      const strmatchConfig = {gid: 'strmatch'};
-      distribution.local.groups.put(strmatchConfig, strmatchGroup, (e, v) => {
-        distribution.strmatch.groups.put(strmatchConfig, strmatchGroup, (e, v) => {
-          const ridxConfig = {gid: 'ridx'};
-          distribution.local.groups.put(ridxConfig, ridxGroup, (e, v) => {
-            distribution.ridx.groups.put(ridxConfig, ridxGroup, (e, v) => {
-              done();
             });
           });
         });

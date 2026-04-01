@@ -153,31 +153,7 @@ function del(configuration, callback) {
  * @param {Callback} callback
  */
 function append(state, configuration, callback) {
-  const key = extractKey(configuration);
-  if (key === null) {
-    return callback(new Error('store.append: no key provided'), null);
-  }
-  const gid = extractGid(configuration);
-  const filename = path.join(getStoreDir(gid), sanitizeKey(key));
-
-  // read existing value (if any), push new state onto it, write back
-  fs.readFile(filename, 'utf8', (err, data) => {
-    let existing = [];
-    if (!err) {
-      try {
-        existing = serialization.deserialize(data);
-      } catch (e) {
-        existing = [];
-      }
-    }
-    existing.push(state);
-    fs.writeFile(filename, serialization.serialize(existing), (writeErr) => {
-      if (writeErr) {
-        return callback(writeErr, null);
-      }
-      return callback(null, existing);
-    });
-  });
+  return callback(new Error('store.append not implemented'));
 }
 
 module.exports = {put, get, del, append};
